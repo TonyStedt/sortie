@@ -39,6 +39,8 @@ A faithful tribute to a classic 1981 horizontal-scrolling arcade shooter (referr
 - Fixed **60 Hz** simulation (`src/core/loop.ts`), decoupled from rendering.
 - All speeds are in **pixels per frame**, and all timers are in **frames**. Never use wall-clock
   time or `dt` in game logic.
+- Screen-space entities (player, shots, bombs) use screen pixels. Terrain is indexed by world x;
+  `scroll` is the world x of screen column 0, so screen x maps to world x as `scroll + x`.
 - `Input.poll()` runs once per simulation frame. Use `pressed()` for edges and `down()` for held
   actions.
 
@@ -75,22 +77,31 @@ src/game.ts    top-level state machine wiring it together
 
 - Tunables live in data, not buried in code. Stage lengths, terrain profiles, enemy placements,
   and densities go in `src/world/stages/*.ts`, with comments documenting tuning values.
+- Terrain is authored as `[run, height]` knots (see `src/world/stages/types.ts`). To match the
+  original's tile-built look, heights and runs are multiples of 8 and slopes are flat or 45°.
+  Every stage starts and ends at a height that joins its neighbours seamlessly.
+- The mission order is `MISSION` in `src/world/stages/index.ts`.
 - All score values go in **one** configurable table, defaulting to the original's values. The
   extra-life threshold is configurable too.
-- Player tuning (speeds, movement band, lives) lives in `PLAYER` in `src/core/config.ts`.
+- Player, weapon, fuel, and scroll tuning live in `src/core/config.ts` (`PLAYER`, `LASER`, `BOMB`,
+  `FUEL`, `WORLD`).
 
 ## Build order
 
 Work one phase at a time, then **stop so the user can test**. Don't start the next phase unasked.
 
 1. ✅ Loop, scaling, input, starfield, player ship movement, HUD skeleton.
-2. Terrain scrolling engine plus stage 1 terrain, collision, laser, bombs, fuel.
+2. ✅ Terrain scrolling engine plus stage 1 terrain, collision, laser, bombs, fuel.
 3. Stage 1 entities: rockets, fuel tanks, mystery targets, explosions, scoring.
 4. Stages 2–3 (ceiling, UFOs, fireballs).
 5. Stages 4–6 (city, maze, base), plus the mission loop and difficulty scaling.
 6. Audio.
 7. Attract mode, 2-player, high scores (localStorage), polish.
 8. Debug overlay (F1): hitboxes, FPS, stage/section select, invincibility.
+
+## Debugging
+
+In dev builds, `window.game` exposes the `Game` instance in the browser console.
 
 ## Controls (current)
 

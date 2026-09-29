@@ -16,6 +16,13 @@ export interface Sprite {
   readonly image: HTMLCanvasElement;
   /** 1 where the pixel is opaque, row-major (index = y * w + x). For collision. */
   readonly mask: Uint8Array;
+  /**
+   * Per column: y of the topmost / bottommost opaque pixel, or -1 if the column
+   * is empty. Terrain is solid above the ceiling and below the floor, so these
+   * extents give an exact pixel-level terrain test.
+   */
+  readonly colTop: Int16Array;
+  readonly colBottom: Int16Array;
 }
 
 export function buildSprite(def: SpriteDef): Sprite {
@@ -41,7 +48,17 @@ export function buildSprite(def: SpriteDef): Sprite {
     }
   });
 
-  return { w, h, image, mask };
+  const colTop = new Int16Array(w).fill(-1);
+  const colBottom = new Int16Array(w).fill(-1);
+  for (let x = 0; x < w; x++) {
+    for (let y = 0; y < h; y++) {
+      if (!mask[y * w + x]) continue;
+      if (colTop[x] < 0) colTop[x] = y;
+      colBottom[x] = y;
+    }
+  }
+
+  return { w, h, image, mask, colTop, colBottom };
 }
 
 export function drawSprite(

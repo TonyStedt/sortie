@@ -42,6 +42,103 @@ const DEFS = {
       '...2',
     ],
   },
+  // Player laser: a short dash, bright at the front.
+  shot: {
+    colors: [PAL.white, PAL.yellow],
+    rows: ['222111'],
+  },
+  // Bomb, three attitudes as the arc steepens. 1 = casing, 2 = fins.
+  bombLevel: {
+    colors: [PAL.yellow, PAL.red],
+    rows: [
+      '2.11.',
+      '22111',
+      '2.11.',
+    ],
+  },
+  bombAngled: {
+    colors: [PAL.yellow, PAL.red],
+    rows: [
+      '22..',
+      '211.',
+      '.111',
+      '..11',
+    ],
+  },
+  bombDive: {
+    colors: [PAL.yellow, PAL.red],
+    rows: [
+      '2.2',
+      '222',
+      '111',
+      '111',
+      '.1.',
+    ],
+  },
+  // Player ship explosion, three frames.
+  shipBoomA: {
+    colors: [PAL.red, PAL.orange, PAL.yellow],
+    rows: [
+      '................',
+      '................',
+      '................',
+      '................',
+      '................',
+      '......1..1......',
+      '.......22.......',
+      '.....12332......',
+      '......23321.....',
+      '.......22.......',
+      '......1..1......',
+      '................',
+      '................',
+      '................',
+      '................',
+      '................',
+    ],
+  },
+  shipBoomB: {
+    colors: [PAL.red, PAL.orange, PAL.yellow],
+    rows: [
+      '................',
+      '................',
+      '...1.......1....',
+      '....1..2..1.....',
+      '.....2.2.2......',
+      '..1...2322...1..',
+      '...2.233332.2...',
+      '....2333332.....',
+      '...2.23333.2....',
+      '..1..22332...1..',
+      '.....2.2.2......',
+      '....1..2..1.....',
+      '...1.......1....',
+      '................',
+      '................',
+      '................',
+    ],
+  },
+  shipBoomC: {
+    colors: [PAL.red, PAL.orange],
+    rows: [
+      '..1..........1..',
+      '................',
+      '....2.....2.....',
+      '.1.......1....1.',
+      '......2.........',
+      '...2.......2....',
+      '........1.......',
+      '..1..2.....2..1.',
+      '........2.......',
+      '....1.......2...',
+      '.2.....1........',
+      '..........2..1..',
+      '....2...........',
+      '..1.....2....1..',
+      '................',
+      '................',
+    ],
+  },
   // Reserve-life icon for the bottom HUD row.
   lifeIcon: {
     colors: SHIP_COLORS,
@@ -83,5 +180,9 @@ export function sprites(): Record<SpriteName, Sprite> {
   return cache;
 }
 
-/** Where the flame attaches, relative to the ship's top-left. */
+/** Attachment points, relative to the ship's top-left. */
 export const SHIP_FLAME_OFFSET = { x: -4, y: 4 } as const;
+export const SHIP_NOSE = { x: 16, y: 5 } as const;
+export const SHIP_BOMB_BAY = { x: 5, y: 10 } as const;
+/** The 16x16 explosion is centred on the 16x10 ship. */
+export const SHIP_BOOM_OFFSET = { x: 0, y: -3 } as const;

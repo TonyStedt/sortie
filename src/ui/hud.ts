@@ -1,4 +1,4 @@
-import { SCREEN_H, SCREEN_W, TILE } from '../core/config';
+import { FUEL, SCREEN_H, SCREEN_W, TILE } from '../core/config';
 import { drawText, drawTextAt, drawTextRight } from '../gfx/font';
 import { PAL } from '../gfx/palette';
 import { drawSprite } from '../gfx/sprite';
@@ -34,7 +34,6 @@ const FUEL_Y = SCREEN_H - 2 * TILE;
 const FUEL_BAR_X = 6 * TILE;
 const FUEL_BAR_W = 16 * TILE;
 const FUEL_BAR_H = 6;
-const FUEL_LOW = 0.25;
 const LIVES_Y = SCREEN_H - TILE;
 
 /** Blink on/off every 16 frames (arcade-standard attention blink). */
@@ -83,7 +82,7 @@ function drawProgress(ctx: CanvasRenderingContext2D, s: HudState): void {
 }
 
 function drawFuel(ctx: CanvasRenderingContext2D, s: HudState): void {
-  const low = s.fuel <= FUEL_LOW;
+  const low = s.fuel <= FUEL.lowFraction;
   drawText(ctx, 'FUEL', TILE, FUEL_Y, low && !blink(s.frame) ? PAL.black : PAL.yellow);
   ctx.fillStyle = PAL.darkRed;
   ctx.fillRect(FUEL_BAR_X, FUEL_Y + 1, FUEL_BAR_W, FUEL_BAR_H);

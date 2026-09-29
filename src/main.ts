@@ -16,3 +16,6 @@ startLoop({
     display.present();
   },
 });
+
+// Dev builds only: expose the game for inspection from the browser console.
+if (import.meta.env.DEV) Object.assign(window, { game });

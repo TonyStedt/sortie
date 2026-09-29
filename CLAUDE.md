@@ -8,6 +8,9 @@ A faithful tribute to a classic 1981 horizontal-scrolling arcade shooter (referr
 - `npm run dev` starts the Vite dev server.
 - `npm run typecheck` runs `tsc` with no emit.
 - `npm run build` runs typecheck plus the production build into `dist/`.
+- Deployment: every push to `main` builds the game and publishes it to GitHub Pages
+  (`.github/workflows/deploy.yml`). `base: './'` in `vite.config.ts` keeps asset paths relative, so
+  the build works under `/sortie/`, and also as a zip upload.
 
 ## Legal / originality (non-negotiable)
 
@@ -15,8 +18,7 @@ A faithful tribute to a classic 1981 horizontal-scrolling arcade shooter (referr
   graphics, sprite rips, or original sound samples.
 - The game's name is **SORTIE** (final, not a placeholder). Never use the original game's name,
   its publisher's name, or their logos anywhere we author: in-game text, page title, package
-  name, code, comments, or docs. Call it "the original" instead. SPEC.md is the user's own
-  document and is the only exception.
+  name, code, comments, or docs, including SPEC.md. Call it "the original" instead.
 - No external asset files. Sprites, font, and SFX are all defined in code.
 
 ## Tech

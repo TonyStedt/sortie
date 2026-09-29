@@ -1,18 +1,19 @@
-# Project: Classic Horizontal Scroller (Scramble-style tribute)
+# Project: SORTIE, a classic horizontal scroller (early-80s arcade tribute)
 
 ## Goal
-Build a faithful tribute to the 1981 arcade game Scramble (Konami). It should
-look and play as close to the original as possible: same stage structure, same
-mechanics, same pacing and difficulty feel. All art and audio must be ORIGINAL
-creations in the authentic early-80s arcade style. Do not use or trace ROM
-graphics, sprite rips, original sound samples, or the Konami/Scramble name or logo.
-Working title: "SORTIE" (placeholder).
+Build a faithful tribute to a classic 1981 horizontal-scrolling arcade shooter
+(referred to below as "the original"). It should look and play as close to the
+original as possible: same stage structure, same mechanics, same pacing and
+difficulty feel. All art and audio must be ORIGINAL creations in the authentic
+early-80s arcade style. Do not use or trace ROM graphics, sprite rips, original
+sound samples, or the original game's or publisher's name or logo.
+Title: "SORTIE".
 
 ## Tech stack
 - TypeScript, HTML5 Canvas 2D, Web Audio API, Vite. No game framework.
 - Fixed logical resolution matching the original hardware (Galaxian-derived,
   approx. 224x256 native — research and confirm the correct displayed
-  orientation/aspect for Scramble before starting), rendered to an offscreen
+  orientation/aspect for the original before starting), rendered to an offscreen
   canvas and integer-scaled with nearest-neighbor to fit the window.
 - Fixed 60 Hz simulation timestep, decoupled from rendering.
   All speeds defined in pixels-per-frame, like the original.

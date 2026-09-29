@@ -64,6 +64,19 @@ src/ui/        HUD, attract mode, title, high-score entry
 src/game.ts    top-level state machine wiring it together
 ```
 
+## Audio
+
+- All sound is synthesized in `src/audio/`, with no sample files. `synth.ts` has the primitives
+  (`tone`, `noise`, `melody`), `sfx.ts` has every effect recipe plus the engine drone (volumes
+  are tuned there), and `audio.ts` has the `AudioEngine`.
+- The game only talks to the `Sounds` interface (`play(name)`, `setEngine(on)`, `toggleMute()`).
+  Trigger sounds from game events and never import Web Audio into game logic.
+- Audio starts on the first key press or click (browser autoplay rules), is suspended while the tab
+  is hidden, and M toggles mute (saved in localStorage).
+- Melodies are original. Write them as `[MIDI note, beats]` sequences.
+- Effect recipes schedule onto any `BaseAudioContext`, so they can be checked by rendering with an
+  `OfflineAudioContext` (peak, RMS, length) without speakers.
+
 ## Art rules
 
 - Colours only come from `PAL` in `src/gfx/palette.ts`.
@@ -118,7 +131,7 @@ Work one phase at a time, then **stop so the user can test**. Don't start the ne
 3. ✅ Stage 1 entities: rockets, fuel tanks, mystery targets, explosions, scoring.
 4. ✅ Stages 2–3 (ceiling, UFOs, fireballs).
 5. ✅ Stages 4–6 (city, maze, base), plus the mission loop and difficulty scaling.
-6. Audio.
+6. ✅ Audio.
 7. Attract mode, 2-player, high scores (localStorage), polish.
 8. Debug overlay (F1): hitboxes, FPS, stage/section select, invincibility.
 
@@ -134,4 +147,4 @@ Work one phase at a time, then **stop so the user can test**. Don't start the ne
 ## Controls (current)
 
 Arrows or WASD to move · Space/Z/J to fire · X/K to bomb · Enter/1 to start · 5/C for coin ·
-P/Esc to pause.
+P/Esc to pause · M to mute.

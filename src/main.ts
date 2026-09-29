@@ -1,3 +1,4 @@
+import { AudioEngine } from './audio/audio';
 import { Input } from './core/input';
 import { startLoop } from './core/loop';
 import { Display } from './core/scaling';
@@ -11,7 +12,7 @@ const canvas = document.querySelector<HTMLCanvasElement>('#screen');
 if (!canvas) throw new Error('Missing #screen canvas');
 
 const display = new Display(canvas);
-const game = new Game(new Input(), readTestMode(MISSION.length));
+const game = new Game(new Input(), readTestMode(MISSION.length), new AudioEngine());
 
 startLoop({
   update: () => game.update(),

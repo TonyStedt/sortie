@@ -13,6 +13,8 @@ export interface EnemyEnv {
   scroll: number;
   /** Ship's screen x (left edge). */
   playerX: number;
+  /** Called when a ground rocket lifts off. */
+  onRocketLaunch(): void;
 }
 
 /** Frames per rocket-exhaust animation step. */
@@ -92,6 +94,7 @@ export class Rocket extends Enemy {
       if (this.willLaunch && this.screenX(env.scroll) - env.playerX <= this.trigger) {
         this.flying = true;
         this.vy = ROCKET.startSpeed;
+        env.onRocketLaunch();
       }
       return;
     }

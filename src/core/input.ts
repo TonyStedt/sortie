@@ -7,7 +7,8 @@ export type Action =
   | 'bomb'
   | 'start'
   | 'coin'
-  | 'pause';
+  | 'pause'
+  | 'mute';
 
 /** Keyboard bindings, by KeyboardEvent.code. */
 const KEYMAP: Record<string, Action> = {
@@ -30,6 +31,7 @@ const KEYMAP: Record<string, Action> = {
   KeyC: 'coin',
   KeyP: 'pause',
   Escape: 'pause',
+  KeyM: 'mute',
 };
 
 /** Standard-mapping gamepad buttons. */

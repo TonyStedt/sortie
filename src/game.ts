@@ -9,6 +9,7 @@ import {
   SCREEN_W,
   WORLD,
 } from './core/config';
+import type { Sounds } from './audio/audio';
 import { difficultyFor } from './core/difficulty';
 import type { Input } from './core/input';
 import { Rng } from './core/rng';
@@ -37,6 +38,11 @@ import { World } from './world/world';
  * gameOver: out of lives; shows GAME OVER, then starts a new game.
  */
 type State = 'playing' | 'dying' | 'gameOver';
+
+/** Low-fuel alarm repeat interval, frames. */
+const FUEL_ALARM_FRAMES = 30;
+/** How long SOUND ON / SOUND OFF shows after pressing M, frames. */
+const SOUND_MESSAGE_FRAMES = 90;
 
 /** Resolve the (single) stage with a baseLoop to world coordinates. */
 function findBaseLoop(world: World): { stage: number; from: number; to: number } | null {
@@ -85,6 +91,11 @@ export class Game {
   private readonly baseLoop = findBaseLoop(this.world);
   /** The base has been destroyed and the ship hasn't left the base stage yet. */
   private baseDestroyed = false;
+  /** Section the ship was in last frame, to notice stage changes. */
+  private lastSection = 0;
+  /** Frames left to show the SOUND ON / SOUND OFF message. */
+  private soundMessage = 0;
+  private muted = false;
   private paused = false;
 
   private readonly hud: HudState = {
@@ -102,13 +113,20 @@ export class Game {
   constructor(
     private readonly input: Input,
     private readonly test: TestMode,
+    private readonly sounds: Sounds,
   ) {
     this.newGame();
   }
 
   update(): void {
     this.input.poll();
+    if (this.input.pressed('mute')) {
+      this.muted = this.sounds.toggleMute();
+      this.soundMessage = SOUND_MESSAGE_FRAMES;
+    }
+    if (this.soundMessage > 0) this.soundMessage--;
     if (this.input.pressed('pause')) this.paused = !this.paused;
+    this.sounds.setEngine(!this.paused && this.state === 'playing' && this.player.mode === 'flying');
     if (this.paused) return;
 
     this.hud.frame++;
@@ -145,6 +163,9 @@ export class Game {
     if (this.test.active) drawTextAt(ctx, 'TEST', 23, 30, PAL.magenta);
     if (this.state === 'gameOver') drawTextAt(ctx, 'GAME OVER', 9, 16, PAL.red);
     if (this.paused) drawTextAt(ctx, 'PAUSE', 11, 18, PAL.white);
+    if (this.soundMessage > 0) {
+      drawTextAt(ctx, this.muted ? 'SOUND OFF' : 'SOUND ON', 9, 20, PAL.yellow);
+    }
   }
 
   private newGame(): void {
@@ -171,6 +192,7 @@ export class Game {
     this.spawner.reset(this.scroll);
     this.waves.reset();
     this.baseDestroyed = false;
+    this.lastSection = section;
     this.state = 'playing';
   }
 
@@ -194,6 +216,10 @@ export class Game {
         this.fuel = Math.max(0, this.fuel - this.difficulty.fuelDrain);
       }
       if (this.fuel <= 0) player.startFalling();
+      const low = this.fuel / FUEL.fullFrames <= FUEL.lowFraction;
+      if (low && this.fuel > 0 && this.hud.frame % FUEL_ALARM_FRAMES === 0) {
+        this.sounds.play('fuelLow');
+      }
       if (++this.flightFrames >= FPS) {
         this.flightFrames = 0;
         this.addScore(SCORES.flightPerSecond);
@@ -203,19 +229,28 @@ export class Game {
     if (player.mode === 'flying') {
       if (input.pressed('fire') && this.shots.length < LASER.maxOnScreen) {
         this.shots.push(new Shot(player.x + SHIP_NOSE.x, player.y + SHIP_NOSE.y));
+        this.sounds.play('laser');
       }
       if (input.pressed('bomb') && this.bombs.length < BOMB.maxOnScreen) {
         this.bombs.push(new Bomb(player.x + SHIP_BOMB_BAY.x, player.y + SHIP_BOMB_BAY.y));
+        this.sounds.play('bomb');
       }
     }
 
-    const env = { world, scroll: this.scroll, playerX: player.x };
+    const env = {
+      world,
+      scroll: this.scroll,
+      playerX: player.x,
+      onRocketLaunch: () => this.sounds.play('rocketLaunch'),
+    };
     for (const e of this.enemies) e.update(env);
 
     this.updateShots();
     this.updateBombs();
     for (const e of this.enemies) {
-      if (e.crashed) this.explosions.push(Explosion.big(e.center().wx, e.center().y));
+      if (!e.crashed) continue;
+      this.explosions.push(Explosion.big(e.center().wx, e.center().y));
+      this.sounds.play('smallExplosion');
     }
     this.enemies = this.enemies.filter((e) => !e.dead);
 
@@ -223,6 +258,8 @@ export class Game {
     // Once the base is destroyed, a death before stage 1 restarts at stage 1.
     const section = world.section(this.scroll + player.x);
     this.hud.section = section;
+    if (section !== this.lastSection) this.sounds.play('stageJingle');
+    this.lastSection = section;
     if (this.baseLoop && section !== this.baseLoop.stage) this.baseDestroyed = false;
     this.checkpoint =
       this.baseDestroyed && this.baseLoop ? (this.baseLoop.stage + 1) % world.stages.length : section;
@@ -266,6 +303,7 @@ export class Game {
       }
       if (bomb.hitsTerrain(this.world, this.scroll)) {
         this.explosions.push(Explosion.puff(this.scroll + bomb.x, bomb.y));
+        this.sounds.play('bombHit');
         return false;
       }
       return true;
@@ -319,6 +357,7 @@ export class Game {
     const showValue = enemy instanceof MysteryTarget || enemy instanceof Base;
     this.explosions.push(Explosion.big(wx, y, showValue ? String(points) : undefined));
     if (enemy instanceof Base) this.missionComplete(wx, y);
+    else this.sounds.play('smallExplosion');
   }
 
   /**
@@ -330,6 +369,8 @@ export class Game {
     this.hud.flags++;
     this.difficulty = difficultyFor(this.hud.flags);
     this.baseDestroyed = true;
+    this.sounds.play('bigExplosion');
+    this.sounds.play('missionComplete');
   }
 
   /**
@@ -360,11 +401,13 @@ export class Game {
     if (EXTRA_LIFE_AT > 0 && !this.extraLifeGiven && before < EXTRA_LIFE_AT && after >= EXTRA_LIFE_AT) {
       this.extraLifeGiven = true;
       this.hud.reserveLives++;
+      this.sounds.play('extraLife');
     }
   }
 
   private die(): void {
     this.player.explode();
+    this.sounds.play('playerDeath');
     this.shots = [];
     this.bombs = [];
     this.state = 'dying';

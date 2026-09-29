@@ -9,12 +9,20 @@
 export type Knot = readonly [run: number, height: number];
 
 /** Things that sit on the ground and scroll with the terrain. */
-export type TargetKind = 'rocket' | 'fuel' | 'mystery';
+export type TargetKind = 'rocket' | 'fuel' | 'mystery' | 'base';
+
+/** Footprint width of each ground object, px (matches its sprite). */
+export const TARGET_WIDTH: Readonly<Record<TargetKind, number>> = {
+  rocket: 8,
+  fuel: 16,
+  mystery: 16,
+  base: 24,
+};
 
 /**
  * A ground object. `x` is the object's left edge, in pixels from the start of
  * the stage; it is stood on the ground automatically. Place objects on flat
- * ground wide enough for them (rocket 8 px, fuel tank and mystery 16 px).
+ * ground at least TARGET_WIDTH wide.
  */
 export interface Placement {
   readonly x: number;
@@ -61,4 +69,13 @@ export interface StageDef {
   targets?: readonly Placement[];
   /** Airborne waves. */
   waves?: readonly WaveDef[];
+  /**
+   * The base stage's repeating end. Until the base is destroyed, when the
+   * screen's left edge reaches `to` (stage x) the view jumps back to `from`,
+   * so the stretch from `from` to `to` (with the base) comes round again.
+   * For the jump to be invisible, the terrain from `to` onward must match
+   * the terrain from `from` onward for a screen width. The stretch must hold
+   * the base and no fuel tanks: running low on fuel is the price of missing.
+   */
+  baseLoop?: { readonly from: number; readonly to: number };
 }

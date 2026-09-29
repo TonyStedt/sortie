@@ -84,8 +84,14 @@ src/game.ts    top-level state machine wiring it together
   Every stage starts and ends at a height that joins its neighbours seamlessly.
 - Airborne enemies (UFOs, fireballs) aren't placed: each stage lists `waves` (see `WaveDef`),
   released while the ship and the screen's right edge are both in that stage.
-- Stages with a ceiling must keep the passage passable. Check the minimum floor-to-ceiling gap
-  when editing (stage 2 keeps it ≥ 72 px), and open the ceiling to 0 at both ends so stages join.
+- Stages with a ceiling must keep the passage passable, and should open the ceiling to 0 at both
+  ends so stages join.
+- For blocky stages, use the builders in `src/world/stages/build.ts`: `skyline` (flat-topped
+  blocks with rooftop objects, e.g. the city) and `tunnel` (floor plus passage height, e.g. the
+  maze and base). They centre objects on flat spans and throw if something doesn't fit.
+- In dev builds, `validateMission` (`src/world/validate.ts`) runs at startup and warns in the
+  console about seams between stages and any spot the ship can't get past. Keep the console clean
+  after editing stage data.
 - The mission order is `MISSION` in `src/world/stages/index.ts`.
 - All score values go in **one** table, `SCORES` in `src/core/scores.ts`, which defaults to the
   original's values. The extra-life threshold (`EXTRA_LIFE_AT`) lives there too.
@@ -94,6 +100,14 @@ src/game.ts    top-level state machine wiring it together
 - Player, weapon, fuel, and scroll tuning live in `src/core/config.ts` (`PLAYER`, `LASER`, `BOMB`,
   `FUEL`, `WORLD`, `ROCKET`, `UFO`, `FIREBALL`).
 - Enemies that can't be destroyed set `shootable = false`, and shots and bombs pass through them.
+- Difficulty per completed mission (base destroyed) is set by `DIFFICULTY` in `src/core/config.ts`,
+  applied through `difficultyFor()` (`src/core/difficulty.ts`). It affects rocket launch chance,
+  wave frequency, enemy speed and fuel burn.
+- Missing the base works as in the original: the base stage's end (`baseLoop` on the stage) comes
+  round again, base included, until the base is destroyed. The stretch has no fuel tanks, so each
+  miss costs fuel. The view jumps back invisibly because the terrain after the stretch matches its
+  start; the dev check verifies this. Only destroying the base earns the flag and continues to
+  stage 1.
 
 ## Build order
 
@@ -103,14 +117,19 @@ Work one phase at a time, then **stop so the user can test**. Don't start the ne
 2. ✅ Terrain scrolling engine plus stage 1 terrain, collision, laser, bombs, fuel.
 3. ✅ Stage 1 entities: rockets, fuel tanks, mystery targets, explosions, scoring.
 4. ✅ Stages 2–3 (ceiling, UFOs, fireballs).
-5. Stages 4–6 (city, maze, base), plus the mission loop and difficulty scaling.
+5. ✅ Stages 4–6 (city, maze, base), plus the mission loop and difficulty scaling.
 6. Audio.
 7. Attract mode, 2-player, high scores (localStorage), polish.
 8. Debug overlay (F1): hitboxes, FPS, stage/section select, invincibility.
 
-## Debugging
+## Debugging and test mode
 
-In dev builds, `window.game` exposes the `Game` instance in the browser console.
+- In dev builds, `window.game` exposes the `Game` instance in the browser console.
+- Test mode, dev builds only, uses URL options that can be combined. It shows TEST in the HUD.
+  - `?stage=N` starts at stage N (1–6); game over restarts there too.
+  - `?invincible` means nothing destroys the ship. Falling out of the playfield still does.
+  - `?fuel` means fuel never runs out.
+  - Example: `http://localhost:5173/?stage=5&invincible&fuel`.
 
 ## Controls (current)
 

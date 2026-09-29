@@ -26,10 +26,11 @@ export class Waves {
   }
 
   /**
-   * Advance one frame. `stage` is the active stage index, or -1 for none.
+   * Advance one frame. `stage` is the active stage index, or -1 for none;
+   * `intervalScale` shortens (or lengthens) the gaps between bursts.
    * Yields the kinds to spawn this frame; iterate it fully every frame.
    */
-  *update(stage: number): Generator<AirKind> {
+  *update(stage: number, intervalScale: number): Generator<AirKind> {
     if (stage !== this.active) {
       this.active = stage;
       const defs = stage >= 0 ? (this.stages[stage].waves ?? []) : [];
@@ -37,7 +38,7 @@ export class Waves {
     }
     for (const s of this.states) {
       if (--s.untilBurst <= 0) {
-        s.untilBurst = s.def.every;
+        s.untilBurst = Math.round(s.def.every * intervalScale);
         s.left = s.def.burst;
         s.untilNext = 0;
       }

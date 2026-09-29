@@ -7,6 +7,7 @@ export const PAL = {
   black: '#000000',
   white: '#ffffff',
   grey: '#a8a8a8',
+  darkGrey: '#575757',
   red: '#ff0000',
   darkRed: '#a80000',
   orange: '#ff9700',

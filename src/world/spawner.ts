@@ -1,6 +1,6 @@
 import { SCREEN_W } from '../core/config';
 import { sprites, type SpriteName } from '../gfx/sprites';
-import type { TargetKind } from './stages/types';
+import { TARGET_WIDTH, type TargetKind } from './stages/types';
 import type { World } from './world';
 
 /** A ground object with its absolute position worked out. */
@@ -16,6 +16,7 @@ const SPRITE_OF: Record<TargetKind, SpriteName> = {
   rocket: 'rocket',
   fuel: 'fuelTank',
   mystery: 'mystery',
+  base: 'base',
 };
 
 /** A placement resolved against the terrain, for one loop of the mission. */
@@ -54,6 +55,13 @@ export class Spawner {
       }
     });
     list.sort((a, b) => a.x - b.x);
+    if (import.meta.env.DEV) {
+      for (const kind of Object.keys(SPRITE_OF) as TargetKind[]) {
+        if (sprites()[SPRITE_OF[kind]].w !== TARGET_WIDTH[kind]) {
+          console.warn(`TARGET_WIDTH.${kind} doesn't match its sprite width`);
+        }
+      }
+    }
     this.all = list;
   }
 
@@ -67,6 +75,14 @@ export class Spawner {
       this.index = 0;
       this.base += L;
     }
+  }
+
+  /**
+   * Carry on from the current view without re-issuing anything already in
+   * it: only objects beyond the lookahead edge will spawn.
+   */
+  resume(scroll: number): void {
+    this.reset(scroll + SCREEN_W + LOOKAHEAD + 1);
   }
 
   /** Objects that have come within LOOKAHEAD of the right edge since the last call. */

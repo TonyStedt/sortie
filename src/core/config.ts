@@ -120,3 +120,22 @@ export const ROCKET = {
 
 /** How long GAME OVER stays up before a new game starts (until attract mode exists). */
 export const GAME_OVER_FRAMES = 240;
+
+/**
+ * Difficulty rises with each completed mission (base destroyed). Values are
+ * per completed mission, each capped.
+ */
+export const DIFFICULTY = {
+  /** Added to ROCKET.launchChance... */
+  rocketLaunchChance: 0.15,
+  rocketLaunchChanceMax: 0.95,
+  /** Air-wave intervals are multiplied by this (shorter = more enemies)... */
+  waveInterval: 0.85,
+  waveIntervalMin: 0.5,
+  /** Enemy speeds (rockets, UFOs, fireballs) are multiplied by 1 + this... */
+  enemySpeed: 0.1,
+  enemySpeedMax: 1.5,
+  /** Fuel burns 1 + this per frame... */
+  fuelDrain: 0.2,
+  fuelDrainMax: 2,
+} as const;

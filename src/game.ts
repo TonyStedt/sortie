@@ -9,15 +9,17 @@ import {
   SCREEN_W,
   WORLD,
 } from './core/config';
+import { difficultyFor } from './core/difficulty';
 import type { Input } from './core/input';
 import { Rng } from './core/rng';
 import { EXTRA_LIFE_AT, SCORES } from './core/scores';
+import type { TestMode } from './core/testmode';
 import { drawTextAt } from './gfx/font';
 import { PAL } from './gfx/palette';
 import { SHIP_BOMB_BAY, SHIP_NOSE, sprites } from './gfx/sprites';
 import { Starfield } from './gfx/starfield';
 import { drawTerrain } from './gfx/terrain';
-import { Enemy, Fireball, FuelTank, MysteryTarget, Rocket, Ufo } from './entities/enemies';
+import { Base, Enemy, Fireball, FuelTank, MysteryTarget, Rocket, Ufo } from './entities/enemies';
 import { Explosion } from './entities/explosion';
 import { Player } from './entities/player';
 import { Bomb, Shot } from './entities/weapons';
@@ -36,9 +38,23 @@ import { World } from './world/world';
  */
 type State = 'playing' | 'dying' | 'gameOver';
 
+/** Resolve the (single) stage with a baseLoop to world coordinates. */
+function findBaseLoop(world: World): { stage: number; from: number; to: number } | null {
+  const stage = world.stages.findIndex((s) => s.baseLoop);
+  const loop = world.stages[stage]?.baseLoop;
+  if (!loop) return null;
+  const start = world.sectionStarts[stage];
+  return { stage, from: start + loop.from, to: start + loop.to };
+}
+
+/** Extra blasts around the base when it goes up (offsets from its centre). */
+const BASE_BLAST: readonly (readonly [number, number])[] = [
+  [-14, -6], [14, -6], [-8, 8], [8, 8], [0, -14],
+];
+
 /**
- * Top-level game state. Phase 4: stages 1-3 (mountains, UFO cave,
- * fireballs), looping.
+ * Top-level game state: the full six-stage mission, looping, with
+ * difficulty rising each time the base is destroyed.
  */
 export class Game {
   private readonly rng = new Rng();
@@ -56,6 +72,8 @@ export class Game {
   private scroll = 0;
   /** Frames of flight left in the tank. */
   private fuel: number = FUEL.fullFrames;
+  /** Rises each time the base is destroyed. */
+  private difficulty = difficultyFor(0);
   /** Counts flying frames towards the next flight bonus. */
   private flightFrames = 0;
   private extraLifeGiven = false;
@@ -63,6 +81,10 @@ export class Game {
   private stateTimer = 0;
   /** Section to restart from after losing a life. */
   private checkpoint = 0;
+  /** The base stage's repeating stretch, in world x of the first loop (if any). */
+  private readonly baseLoop = findBaseLoop(this.world);
+  /** The base has been destroyed and the ship hasn't left the base stage yet. */
+  private baseDestroyed = false;
   private paused = false;
 
   private readonly hud: HudState = {
@@ -77,7 +99,10 @@ export class Game {
     flags: 0,
   };
 
-  constructor(private readonly input: Input) {
+  constructor(
+    private readonly input: Input,
+    private readonly test: TestMode,
+  ) {
     this.newGame();
   }
 
@@ -117,6 +142,7 @@ export class Game {
     for (const s of this.shots) s.draw(ctx);
     if (this.state !== 'gameOver') this.player.draw(ctx);
     drawHud(ctx, this.hud);
+    if (this.test.active) drawTextAt(ctx, 'TEST', 23, 30, PAL.magenta);
     if (this.state === 'gameOver') drawTextAt(ctx, 'GAME OVER', 9, 16, PAL.red);
     if (this.paused) drawTextAt(ctx, 'PAUSE', 11, 18, PAL.white);
   }
@@ -125,8 +151,9 @@ export class Game {
     this.hud.scores = [0, 0];
     this.hud.reserveLives = PLAYER.startLives - 1;
     this.hud.flags = 0;
+    this.difficulty = difficultyFor(0);
     this.extraLifeGiven = false;
-    this.startLife(0);
+    this.startLife(this.test.startStage);
   }
 
   /** Put a fresh ship at the start of the given section, with its targets restored. */
@@ -143,25 +170,30 @@ export class Game {
     this.explosions = [];
     this.spawner.reset(this.scroll);
     this.waves.reset();
+    this.baseDestroyed = false;
     this.state = 'playing';
   }
 
   private updatePlaying(): void {
     const { player, input, world } = this;
     this.scroll += WORLD.scrollSpeed;
+    this.repeatBaseIfMissed();
     for (const spawn of this.spawner.take(this.scroll)) this.enemies.push(this.createEnemy(spawn));
     // Air waves run while the ship and the screen's right edge share a stage.
     const shipStage = world.section(this.scroll + player.x);
     const edgeStage = world.section(this.scroll + SCREEN_W - 1);
-    for (const kind of this.waves.update(shipStage === edgeStage ? shipStage : -1)) {
+    const activeStage = shipStage === edgeStage ? shipStage : -1;
+    for (const kind of this.waves.update(activeStage, this.difficulty.waveInterval)) {
       this.enemies.push(this.createAirEnemy(kind));
     }
 
     player.update(input);
 
     if (player.mode === 'flying') {
-      this.fuel = Math.max(0, this.fuel - 1);
-      if (this.fuel === 0) player.startFalling();
+      if (!this.test.infiniteFuel) {
+        this.fuel = Math.max(0, this.fuel - this.difficulty.fuelDrain);
+      }
+      if (this.fuel <= 0) player.startFalling();
       if (++this.flightFrames >= FPS) {
         this.flightFrames = 0;
         this.addScore(SCORES.flightPerSecond);
@@ -182,12 +214,18 @@ export class Game {
 
     this.updateShots();
     this.updateBombs();
+    for (const e of this.enemies) {
+      if (e.crashed) this.explosions.push(Explosion.big(e.center().wx, e.center().y));
+    }
     this.enemies = this.enemies.filter((e) => !e.dead);
 
     // The section is wherever the ship is; it becomes the restart point.
+    // Once the base is destroyed, a death before stage 1 restarts at stage 1.
     const section = world.section(this.scroll + player.x);
     this.hud.section = section;
-    this.checkpoint = section;
+    if (this.baseLoop && section !== this.baseLoop.stage) this.baseDestroyed = false;
+    this.checkpoint =
+      this.baseDestroyed && this.baseLoop ? (this.baseLoop.stage + 1) % world.stages.length : section;
 
     if (this.playerCollides()) this.die();
   }
@@ -237,7 +275,9 @@ export class Game {
   private playerCollides(): boolean {
     const { player, scroll } = this;
     const ship = sprites().ship;
+    // Falling out of the playfield (out of fuel) ends the life even in test mode.
     if (player.y >= PLAYFIELD_BOTTOM) return true;
+    if (this.test.invincible) return false;
     if (spriteHitsTerrain(this.world, scroll, ship, player.x, player.y)) return true;
     return this.enemies.some(
       (e) => !e.dead && spritesOverlap(ship, player.x, player.y, e.sprite, e.screenX(scroll), e.y),
@@ -247,20 +287,22 @@ export class Game {
   private createEnemy(spawn: Spawn): Enemy {
     switch (spawn.kind) {
       case 'rocket':
-        return new Rocket(spawn.wx, spawn.y, this.rng);
+        return new Rocket(spawn.wx, spawn.y, this.rng, this.difficulty);
       case 'fuel':
         return new FuelTank(spawn.wx, spawn.y);
       case 'mystery':
         return new MysteryTarget(spawn.wx, spawn.y);
+      case 'base':
+        return new Base(spawn.wx, spawn.y);
     }
   }
 
   private createAirEnemy(kind: AirKind): Enemy {
     switch (kind) {
       case 'ufo':
-        return Ufo.spawn(this.world, this.scroll);
+        return Ufo.spawn(this.world, this.scroll, this.difficulty);
       case 'fireball':
-        return Fireball.spawn(this.world, this.scroll, this.rng);
+        return Fireball.spawn(this.world, this.scroll, this.rng, this.difficulty);
     }
   }
 
@@ -273,9 +315,40 @@ export class Game {
       this.fuel = Math.min(FUEL.fullFrames, this.fuel + FUEL.tankRefillFrames);
     }
     const { wx, y } = enemy.center();
-    // Only mystery targets show their value, since it is a surprise.
-    const label = enemy instanceof MysteryTarget ? String(points) : undefined;
-    this.explosions.push(Explosion.big(wx, y, label));
+    // Mystery targets show their surprise value; the base shows its bonus.
+    const showValue = enemy instanceof MysteryTarget || enemy instanceof Base;
+    this.explosions.push(Explosion.big(wx, y, showValue ? String(points) : undefined));
+    if (enemy instanceof Base) this.missionComplete(wx, y);
+  }
+
+  /**
+   * The base is destroyed: a flag is awarded and every later loop is harder.
+   * Play carries straight on into stage 1.
+   */
+  private missionComplete(wx: number, y: number): void {
+    for (const [dx, dy] of BASE_BLAST) this.explosions.push(Explosion.big(wx + dx, y + dy));
+    this.hud.flags++;
+    this.difficulty = difficultyFor(this.hud.flags);
+    this.baseDestroyed = true;
+  }
+
+  /**
+   * The base was missed: when the screen's left edge reaches the end of the
+   * base stretch, jump the view back to its start (the terrain there is
+   * identical, so the jump can't be seen). The base and its guards come round
+   * again; fuel doesn't.
+   */
+  private repeatBaseIfMissed(): void {
+    const loop = this.baseLoop;
+    if (!loop || this.baseDestroyed) return;
+    const L = this.world.length;
+    const local = ((this.scroll % L) + L) % L;
+    if (local < loop.to || local >= loop.to + WORLD.scrollSpeed) return;
+    const back = loop.to - loop.from;
+    this.scroll -= back;
+    for (const e of this.enemies) e.wx -= back;
+    for (const x of this.explosions) x.shift(-back);
+    this.spawner.resume(this.scroll);
   }
 
   private addScore(points: number): void {

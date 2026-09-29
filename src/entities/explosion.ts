@@ -16,7 +16,7 @@ export class Explosion {
   private frame = 0;
 
   private constructor(
-    private readonly wx: number,
+    private wx: number,
     private readonly y: number,
     private readonly frames: readonly Sprite[],
     private readonly label?: string,
@@ -32,6 +32,11 @@ export class Explosion {
   static puff(wx: number, y: number): Explosion {
     const s = sprites();
     return new Explosion(wx, y - 2, [s.puffA, s.puffB]);
+  }
+
+  /** Move along the world x axis (when the view jumps back). */
+  shift(dx: number): void {
+    this.wx += dx;
   }
 
   /** Returns false when finished. */

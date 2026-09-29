@@ -1,4 +1,5 @@
 import { FIREBALL, PLAYFIELD_TOP, ROCKET, SCREEN_W, UFO } from '../core/config';
+import type { Difficulty } from '../core/difficulty';
 import type { Rng } from '../core/rng';
 import { SCORES } from '../core/scores';
 import { drawSprite, type Sprite } from '../gfx/sprite';
@@ -24,6 +25,8 @@ const ROCKET_FLAME_FRAMES = 3;
  */
 export abstract class Enemy {
   dead = false;
+  /** Set together with `dead` when it destroyed itself on terrain (explodes, no points). */
+  crashed = false;
   /** False for things that shots and bombs pass straight through. */
   readonly shootable: boolean = true;
   protected frame = 0;
@@ -66,11 +69,13 @@ export class Rocket extends Enemy {
   private vy = 0;
   private readonly willLaunch: boolean;
   private readonly trigger: number;
+  private readonly maxSpeed: number;
 
-  constructor(wx: number, y: number, rng: Rng) {
+  constructor(wx: number, y: number, rng: Rng, difficulty: Difficulty) {
     super(wx, y);
-    this.willLaunch = rng.next() < ROCKET.launchChance;
+    this.willLaunch = rng.next() < difficulty.rocketLaunchChance;
     this.trigger = rng.range(ROCKET.triggerMin, ROCKET.triggerMax);
+    this.maxSpeed = ROCKET.maxSpeed * difficulty.enemySpeed;
   }
 
   get sprite(): Sprite {
@@ -90,12 +95,13 @@ export class Rocket extends Enemy {
       }
       return;
     }
-    this.vy = Math.min(ROCKET.maxSpeed, this.vy + ROCKET.accel);
+    this.vy = Math.min(this.maxSpeed, this.vy + ROCKET.accel);
     this.y -= this.vy;
     if (this.y + this.sprite.h < PLAYFIELD_TOP) this.dead = true;
-    // A rocket flying into a ceiling is simply destroyed (no points).
+    // A rocket flying into a ceiling blows up (no points).
     else if (spriteHitsTerrain(env.world, env.scroll, this.sprite, this.screenX(env.scroll), this.y)) {
       this.dead = true;
+      this.crashed = true;
     }
   }
 
@@ -120,6 +126,17 @@ export class FuelTank extends Enemy {
   }
 }
 
+/** The enemy base. Destroying it completes the mission. */
+export class Base extends Enemy {
+  get sprite(): Sprite {
+    return sprites().base;
+  }
+
+  points(): number {
+    return SCORES.base;
+  }
+}
+
 export class MysteryTarget extends Enemy {
   get sprite(): Sprite {
     return sprites().mystery;
@@ -138,10 +155,12 @@ const UFO_ANIM_FRAMES = 6;
  * on a sine wave. The swing shrinks where the passage is too narrow for it.
  */
 export class Ufo extends Enemy {
+  private speed: number = UFO.speed;
+
   /** Enters at the right edge of the screen, on the passage centre line. */
-  static spawn(world: World, scroll: number): Ufo {
-    const wx = scroll + SCREEN_W;
-    const ufo = new Ufo(wx, 0);
+  static spawn(world: World, scroll: number, difficulty: Difficulty): Ufo {
+    const ufo = new Ufo(scroll + SCREEN_W, 0);
+    ufo.speed = UFO.speed * difficulty.enemySpeed;
     ufo.y = ufo.pathY(world);
     return ufo;
   }
@@ -157,7 +176,7 @@ export class Ufo extends Enemy {
 
   update(env: EnemyEnv): void {
     super.update(env);
-    this.wx -= UFO.speed;
+    this.wx -= this.speed;
     this.y = this.pathY(env.world);
   }
 
@@ -181,16 +200,19 @@ const FIREBALL_ANIM_FRAMES = 4;
 /** Fireball: streaks straight left. Cannot be destroyed, only dodged. */
 export class Fireball extends Enemy {
   readonly shootable = false;
+  private speed: number = FIREBALL.speed;
 
   /** Enters at the right edge at a random height in the open sky. */
-  static spawn(world: World, scroll: number, rng: Rng): Fireball {
+  static spawn(world: World, scroll: number, rng: Rng, difficulty: Difficulty): Fireball {
     const h = sprites().fireballA.h;
     // Keep clear of the highest ground currently on screen.
     let ground = Infinity;
     for (let x = 0; x < SCREEN_W; x++) ground = Math.min(ground, world.floorY(scroll + x));
     const top = PLAYFIELD_TOP + FIREBALL.topMargin;
     const bottom = Math.max(top, ground - FIREBALL.groundMargin - h);
-    return new Fireball(scroll + SCREEN_W, rng.range(top, bottom));
+    const fireball = new Fireball(scroll + SCREEN_W, rng.range(top, bottom));
+    fireball.speed = FIREBALL.speed * difficulty.enemySpeed;
+    return fireball;
   }
 
   get sprite(): Sprite {
@@ -204,10 +226,11 @@ export class Fireball extends Enemy {
 
   update(env: EnemyEnv): void {
     super.update(env);
-    this.wx -= FIREBALL.speed;
-    // Fizzles out if it meets rising ground.
+    this.wx -= this.speed;
+    // Bursts if it meets rising ground.
     if (spriteHitsTerrain(env.world, env.scroll, this.sprite, this.screenX(env.scroll), this.y)) {
       this.dead = true;
+      this.crashed = true;
     }
   }
 }

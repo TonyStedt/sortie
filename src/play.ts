@@ -71,12 +71,13 @@ export class Play {
 
   private readonly spawner: Spawner;
   private readonly waves: Waves;
-  private shots: Shot[] = [];
-  private bombs: Bomb[] = [];
+  /** Public for the debug overlay's hitboxes. */
+  shots: Shot[] = [];
+  bombs: Bomb[] = [];
   private explosions: Explosion[] = [];
   /** Frames of flight left in the tank. */
   private fuel: number = FUEL.fullFrames;
-  private difficulty = difficultyFor(0);
+  difficulty = difficultyFor(0);
   /** Counts flying frames towards the next flight bonus. */
   private flightFrames = 0;
   private stateTimer = 0;
@@ -88,7 +89,7 @@ export class Play {
   /** Section the ship was in last frame, to notice stage changes. */
   private lastSection = 0;
 
-  private stats: PlayerStats = newPlayerStats(0);
+  stats: PlayerStats = newPlayerStats(0);
   private sounds: Sounds = SILENT;
   private test: TestMode = NO_TEST;
 

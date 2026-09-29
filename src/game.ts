@@ -9,6 +9,7 @@ import { PAL } from './gfx/palette';
 import { Starfield } from './gfx/starfield';
 import { NO_TEST, Play, SILENT, newPlayerStats, type PlayerStats } from './play';
 import { Autopilot } from './ui/autopilot';
+import type { DebugCommand, DebugInfo, DebugOverlay } from './ui/debug';
 import { InitialsEntry } from './ui/entry';
 import { drawHud, type HudState } from './ui/hud';
 import { drawHighScores, drawScoreTable, drawTitle } from './ui/screens';
@@ -65,6 +66,8 @@ export class Game {
     private readonly input: Input,
     private readonly test: TestMode,
     private readonly sounds: Sounds,
+    /** Dev builds only; null in production. */
+    private readonly debug: DebugOverlay | null = null,
   ) {
     // Test mode skips attract mode and goes straight into a game.
     if (test.active) this.startGame(1);
@@ -72,6 +75,10 @@ export class Game {
 
   update(): void {
     this.input.poll();
+    if (this.debug) {
+      this.debug.noteUpdate();
+      for (const cmd of this.debug.takeCommands()) this.runDebugCommand(cmd);
+    }
     if (this.input.pressed('mute')) {
       this.muted = this.sounds.toggleMute();
       this.soundMessage = SOUND_MESSAGE_FRAMES;
@@ -123,6 +130,7 @@ export class Game {
       m.kind === 'ready' || m.kind === 'play' || m.kind === 'gameOver' ||
       (m.kind === 'attract' && m.screen === 'demo');
     if (showsPlayfield) this.play.render(ctx);
+    if (showsPlayfield && this.debug?.hitboxes) this.debug.drawHitboxes(ctx, this.play);
 
     switch (m.kind) {
       case 'attract':
@@ -156,6 +164,62 @@ export class Game {
     if (this.soundMessage > 0) {
       drawTextCentered(ctx, this.muted ? 'SOUND OFF' : 'SOUND ON', 20, PAL.yellow);
     }
+    if (this.debug?.panel) this.debug.drawPanel(ctx, this.debugInfo(showsPlayfield));
+  }
+
+  // --- Debug overlay (dev builds) -----------------------------------------
+
+  private runDebugCommand(cmd: DebugCommand): void {
+    const t = this.test;
+    switch (cmd) {
+      case 'invincible':
+        t.invincible = !t.invincible;
+        break;
+      case 'fuel':
+        t.infiniteFuel = !t.infiniteFuel;
+        break;
+      case 'prevStage':
+      case 'nextStage': {
+        const n = this.world.stages.length;
+        const inGame = this.mode.kind === 'ready' || this.mode.kind === 'play';
+        const from = inGame ? this.play.section : t.startStage;
+        const to = (from + (cmd === 'nextStage' ? 1 : -1) + n) % n;
+        // New games (and restarts after game over) start there too.
+        t.startStage = to;
+        if (inGame) {
+          this.players[this.active].checkpoint = to;
+          this.paused = false;
+          this.beginTurn(false);
+        } else {
+          this.startGame(1);
+        }
+        break;
+      }
+    }
+    t.active = true;
+  }
+
+  private debugInfo(showsPlayfield: boolean): DebugInfo | null {
+    if (!showsPlayfield) return null;
+    const { play, world } = this;
+    const L = world.length;
+    const wx = (((play.scroll + play.player.x) % L) + L) % L;
+    const section = world.section(wx);
+    const d = play.difficulty;
+    return {
+      stageLabel: world.stages[section].label,
+      stageX: Math.floor(wx - world.sectionStarts[section]),
+      scroll: play.scroll,
+      enemies: play.enemies.length,
+      fuel: play.fuelFraction,
+      missions: play.stats.missions,
+      rocketChance: d.rocketLaunchChance,
+      waveInterval: d.waveInterval,
+      enemySpeed: d.enemySpeed,
+      fuelDrain: d.fuelDrain,
+      invincible: this.test.invincible,
+      infiniteFuel: this.test.infiniteFuel,
+    };
   }
 
   // --- Attract mode -------------------------------------------------------

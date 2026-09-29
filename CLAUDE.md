@@ -147,7 +147,7 @@ Work one phase at a time, then **stop so the user can test**. Don't start the ne
 5. ✅ Stages 4–6 (city, maze, base), plus the mission loop and difficulty scaling.
 6. ✅ Audio.
 7. ✅ Attract mode, 2-player, high scores (localStorage), polish.
-8. Debug overlay (F1): hitboxes, FPS, stage/section select, invincibility.
+8. ✅ Debug overlay (F1): hitboxes, FPS, stage/section select, invincibility.
 
 ## Debugging and test mode
 
@@ -158,6 +158,16 @@ Work one phase at a time, then **stop so the user can test**. Don't start the ne
   - `?invincible` means nothing destroys the ship. Falling out of the playfield still does.
   - `?fuel` means fuel never runs out.
   - Example: `http://localhost:5173/?stage=5&invincible&fuel`.
+- The debug overlay (`src/ui/debug.ts`) is also dev-only. F1 toggles a panel with FPS and
+  updates/s, stage and position, enemies, fuel, missions and the current difficulty.
+  - F2 toggles invincibility and F3 infinite fuel. These are the same flags as test mode.
+  - F4 toggles hitboxes. Each object's collision mask is tinted (ship green, enemies red, fireballs
+    orange, weapons yellow) and its bounds are outlined.
+  - With the panel open, `[` / `]` jump to the previous or next stage. From attract mode they
+    start a game there.
+  - Using any of these turns on TEST, like the URL options.
+- Production builds leave out both the overlay and test mode entirely. Keep it that way: gate
+  new debug features on `import.meta.env.DEV`.
 
 ## Controls (current)
 

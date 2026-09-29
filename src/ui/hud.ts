@@ -8,11 +8,14 @@ export const SECTION_LABELS = ['1ST', '2ND', '3RD', '4TH', '5TH', 'BASE'] as con
 
 export interface HudState {
   frame: number;
+  /** 'scores' shows only the score rows (attract screens). */
+  mode: 'full' | 'scores';
   scores: [number, number];
   highScore: number;
   /** 0 or 1. */
   activePlayer: number;
-  twoPlayerGame: boolean;
+  /** Blink the active player's label (during a game). */
+  blinkActive: boolean;
   /** Current section, 0..5. */
   section: number;
   /** Fuel remaining, 0..1. */
@@ -41,24 +44,22 @@ const blink = (frame: number) => Math.floor(frame / 16) % 2 === 0;
 
 export function drawHud(ctx: CanvasRenderingContext2D, s: HudState): void {
   drawScores(ctx, s);
+  if (s.mode === 'scores') return;
   drawProgress(ctx, s);
   drawFuel(ctx, s);
   drawLivesAndFlags(ctx, s);
 }
 
 function drawScores(ctx: CanvasRenderingContext2D, s: HudState): void {
-  // The active player's label blinks.
-  if (s.activePlayer !== 0 || blink(s.frame)) drawTextAt(ctx, '1UP', 3, ROW_LABELS, PAL.red);
+  // The active player's label blinks during a game.
+  const shown = (p: number) => !s.blinkActive || s.activePlayer !== p || blink(s.frame);
+  if (shown(0)) drawTextAt(ctx, '1UP', 3, ROW_LABELS, PAL.red);
   drawTextAt(ctx, 'HIGH SCORE', 9, ROW_LABELS, PAL.red);
-  if (s.twoPlayerGame && (s.activePlayer !== 1 || blink(s.frame))) {
-    drawTextAt(ctx, '2UP', 22, ROW_LABELS, PAL.red);
-  }
+  if (shown(1)) drawTextAt(ctx, '2UP', 22, ROW_LABELS, PAL.red);
 
   drawTextRight(ctx, formatScore(s.scores[0]), 7 * TILE, ROW_SCORES * TILE, PAL.white);
   drawTextRight(ctx, formatScore(s.highScore), 17 * TILE, ROW_SCORES * TILE, PAL.white);
-  if (s.twoPlayerGame) {
-    drawTextRight(ctx, formatScore(s.scores[1]), 26 * TILE, ROW_SCORES * TILE, PAL.white);
-  }
+  drawTextRight(ctx, formatScore(s.scores[1]), 26 * TILE, ROW_SCORES * TILE, PAL.white);
 }
 
 /** Arcade convention: scores always show at least two digits ("00"). */

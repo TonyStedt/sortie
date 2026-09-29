@@ -84,6 +84,10 @@ export class Rocket extends Enemy {
     return sprites().rocket;
   }
 
+  get isFlying(): boolean {
+    return this.flying;
+  }
+
   points(): number {
     return this.flying ? SCORES.rocketFlying : SCORES.rocketGrounded;
   }

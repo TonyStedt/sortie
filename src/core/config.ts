@@ -118,8 +118,21 @@ export const ROCKET = {
   maxSpeed: 2,
 } as const;
 
-/** How long GAME OVER stays up before a new game starts (until attract mode exists). */
-export const GAME_OVER_FRAMES = 240;
+/** Game flow and attract-mode timing (frames). */
+export const FLOW = {
+  /** No coins needed: START begins a game. Set false to require coins (5 / C). */
+  freePlay: true,
+  titleFrames: 6 * FPS,
+  scoreTableFrames: 6 * FPS,
+  highScoresFrames: 6 * FPS,
+  /** The demo ends at this length, or sooner if the demo ship is lost. */
+  demoMaxFrames: 30 * FPS,
+  /** PLAYER n shown before a turn starts. */
+  readyFrames: 2 * FPS,
+  gameOverFrames: 3 * FPS,
+  /** Initials entry accepts what's there after this long. */
+  entryFrames: 30 * FPS,
+} as const;
 
 /**
  * Difficulty rises with each completed mission (base destroyed). Values are

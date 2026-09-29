@@ -1,4 +1,4 @@
-import { TILE } from '../core/config';
+import { SCREEN_W, TILE } from '../core/config';
 
 /**
  * Original arcade-style bitmap font: 7x7 glyphs in 8x8 cells, so text lines up
@@ -45,6 +45,8 @@ const GLYPHS: Record<string, readonly string[]> = {
   '.': ['.......', '.......', '.......', '.......', '.......', '..##...', '..##...'],
   '!': ['..##...', '..##...', '..##...', '..##...', '.......', '..##...', '..##...'],
   ':': ['.......', '..##...', '..##...', '.......', '..##...', '..##...', '.......'],
+  '/': ['.....##', '....##.', '...##..', '..##...', '.##....', '##.....', '.......'],
+  '?': ['.#####.', '##...##', '....##.', '...##..', '...##..', '.......', '...##..'],
   ' ': ['.......', '.......', '.......', '.......', '.......', '.......', '.......'],
 };
 
@@ -110,4 +112,32 @@ export function drawTextAt(
   color: string,
 ): void {
   drawText(ctx, text, col * TILE, row * TILE, color);
+}
+
+/** Draw text horizontally centred on the screen, at tile row `row`. */
+export function drawTextCentered(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  row: number,
+  color: string,
+): void {
+  drawText(ctx, text, Math.floor((SCREEN_W - text.length * TILE) / 2), row * TILE, color);
+}
+
+/** Draw text at an integer scale (e.g. 2 for a title), top-left at (x, y). */
+export function drawTextScaled(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  scale: number,
+  color: string,
+): void {
+  const img = sheet(color);
+  const size = TILE * scale;
+  for (let i = 0; i < text.length; i++) {
+    const idx = INDEX.get(text[i].toUpperCase());
+    if (idx === undefined) continue;
+    ctx.drawImage(img, idx * TILE, 0, TILE, TILE, x + i * size, y, size, size);
+  }
 }

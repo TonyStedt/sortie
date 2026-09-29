@@ -1,3 +1,5 @@
+import type { Controls } from './controls';
+
 export type Action =
   | 'up'
   | 'down'
@@ -6,6 +8,7 @@ export type Action =
   | 'fire'
   | 'bomb'
   | 'start'
+  | 'start2'
   | 'coin'
   | 'pause'
   | 'mute';
@@ -27,6 +30,7 @@ const KEYMAP: Record<string, Action> = {
   KeyK: 'bomb',
   Enter: 'start',
   Digit1: 'start',
+  Digit2: 'start2',
   Digit5: 'coin',
   KeyC: 'coin',
   KeyP: 'pause',
@@ -53,7 +57,7 @@ const PAD_DEADZONE = 0.5;
  * Collects keyboard and gamepad state. Call poll() once per simulation frame;
  * down()/pressed() then describe that frame.
  */
-export class Input {
+export class Input implements Controls {
   private readonly keys = new Set<Action>();
   private current = new Set<Action>();
   private previous = new Set<Action>();

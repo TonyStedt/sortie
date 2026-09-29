@@ -1,5 +1,5 @@
 import { PLAYER } from '../core/config';
-import type { Input } from '../core/input';
+import type { Controls } from '../core/controls';
 import { drawSprite } from '../gfx/sprite';
 import { SHIP_BOOM_OFFSET, SHIP_FLAME_OFFSET, sprites } from '../gfx/sprites';
 
@@ -43,11 +43,11 @@ export class Player {
     this.boomFrame = 0;
   }
 
-  update(input: Input): void {
+  update(controls: Controls): void {
     this.frame++;
     switch (this.mode) {
       case 'flying': {
-        const { x, y } = input.axis();
+        const { x, y } = controls.axis();
         this.x = clamp(this.x + x * PLAYER.speedX, PLAYER.minX, PLAYER.maxX);
         this.y = clamp(this.y + y * PLAYER.speedY, PLAYER.minY, PLAYER.maxY);
         break;

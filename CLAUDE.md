@@ -60,9 +60,23 @@ src/audio/     procedural Web Audio SFX (oscillators, noise, envelopes). No samp
 src/world/     terrain, scrolling, stage progression
 src/world/stages/*.ts   stage data only (terrain, placements, tuning), no engine logic
 src/entities/  player, shots, bombs, rockets, UFOs, fireballs, fuel tanks, mystery, base, explosions
-src/ui/        HUD, attract mode, title, high-score entry
-src/game.ts    top-level state machine wiring it together
+src/ui/        HUD, attract screens, demo autopilot, high-score entry
+src/play.ts    one player's turn: world, ship, enemies, weapons, fuel, scoring (`Play`)
+src/game.ts    the arcade machine: attract mode, credits, players taking turns, game over,
+               initials entry (`Game`); each turn runs in `Play`
 ```
+
+## Game flow
+
+- The attract loop runs title → score table → high scores → demo, then repeats. The demo is `Play`
+  driven by `Autopilot` (a `Controls` implementation) with no sound.
+- START (Enter/1) begins a 1-player game and 2 begins a 2-player game. Free play is on by default
+  (`FLOW.freePlay`). With it off, coins (5/C) are needed.
+- Two players alternate on each lost ship. Each has their own `PlayerStats`: score, reserve ships,
+  missions (and so difficulty), extra life and checkpoint.
+- Game over is followed by initials entry if the score makes the top 10 (`HighScores`, saved in
+  localStorage). Then play goes to the other player or back to attract mode.
+- Timings for every screen are in `FLOW` in `src/core/config.ts`.
 
 ## Audio
 
@@ -132,7 +146,7 @@ Work one phase at a time, then **stop so the user can test**. Don't start the ne
 4. ✅ Stages 2–3 (ceiling, UFOs, fireballs).
 5. ✅ Stages 4–6 (city, maze, base), plus the mission loop and difficulty scaling.
 6. ✅ Audio.
-7. Attract mode, 2-player, high scores (localStorage), polish.
+7. ✅ Attract mode, 2-player, high scores (localStorage), polish.
 8. Debug overlay (F1): hitboxes, FPS, stage/section select, invincibility.
 
 ## Debugging and test mode
@@ -140,11 +154,12 @@ Work one phase at a time, then **stop so the user can test**. Don't start the ne
 - In dev builds, `window.game` exposes the `Game` instance in the browser console.
 - Test mode, dev builds only, uses URL options that can be combined. It shows TEST in the HUD.
   - `?stage=N` starts at stage N (1–6); game over restarts there too.
+  - Any test option skips attract mode and high-score entry and goes straight into a game.
   - `?invincible` means nothing destroys the ship. Falling out of the playfield still does.
   - `?fuel` means fuel never runs out.
   - Example: `http://localhost:5173/?stage=5&invincible&fuel`.
 
 ## Controls (current)
 
-Arrows or WASD to move · Space/Z/J to fire · X/K to bomb · Enter/1 to start · 5/C for coin ·
-P/Esc to pause · M to mute.
+Arrows or WASD to move · Space/Z/J to fire · X/K to bomb · Enter/1 for 1 player · 2 for 2 players ·
+5/C for coin (when free play is off) · P/Esc to pause · M to mute.

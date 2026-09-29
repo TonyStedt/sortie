@@ -9,6 +9,18 @@ import { buildSprite, type Sprite, type SpriteDef } from './sprite';
 // 1 = hull, 2 = trim / wing, 3 = canopy
 const SHIP_COLORS = [PAL.white, PAL.red, PAL.cyan] as const;
 
+const UFO_COLORS = [PAL.cyan, PAL.white, PAL.red] as const;
+function ufoRows(lights: string): string[] {
+  return [
+    '......2222......',
+    '....22222222....',
+    '..111111111111..',
+    lights,
+    '..111111111111..',
+    '....11....11....',
+  ];
+}
+
 // Explosion frames, shared by the ship and targets (different colours).
 const SHIP_BOOM_COLORS = [PAL.red, PAL.orange, PAL.yellow] as const;
 const TARGET_BOOM_COLORS = [PAL.orange, PAL.yellow, PAL.white] as const;
@@ -239,6 +251,36 @@ const DEFS = {
       '3333333333333333',
       '3333333333333333',
       '.33..........33.',
+    ],
+  },
+  // UFO: saucer with a ring of lights that chase round (3 frames).
+  // 1 = hull, 2 = dome, 3 = lights.
+  ufoA: { colors: UFO_COLORS, rows: ufoRows('1131131131131131') },
+  ufoB: { colors: UFO_COLORS, rows: ufoRows('1311311311311311') },
+  ufoC: { colors: UFO_COLORS, rows: ufoRows('3113113113113113') },
+  // Fireball, flying left: white-hot head, flickering tail (2 frames).
+  fireballA: {
+    colors: [PAL.white, PAL.yellow, PAL.red],
+    rows: [
+      '...2223..3...3..',
+      '.22112223333.3..',
+      '2111112222333.3.',
+      '2111111222233333',
+      '2111112222333.3.',
+      '.22112223333.3..',
+      '...2223..3...3..',
+    ],
+  },
+  fireballB: {
+    colors: [PAL.white, PAL.yellow, PAL.red],
+    rows: [
+      '...222.3...3....',
+      '.2211222333.3..3',
+      '21111122223333..',
+      '211111122223333.',
+      '21111122223333..',
+      '.2211222333.3..3',
+      '...222.3...3....',
     ],
   },
   // Reserve-life icon for the bottom HUD row.

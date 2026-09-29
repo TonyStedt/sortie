@@ -6,6 +6,7 @@ import {
   LASER,
   PLAYER,
   PLAYFIELD_BOTTOM,
+  SCREEN_W,
   WORLD,
 } from './core/config';
 import type { Input } from './core/input';
@@ -16,7 +17,7 @@ import { PAL } from './gfx/palette';
 import { SHIP_BOMB_BAY, SHIP_NOSE, sprites } from './gfx/sprites';
 import { Starfield } from './gfx/starfield';
 import { drawTerrain } from './gfx/terrain';
-import { Enemy, FuelTank, MysteryTarget, Rocket } from './entities/enemies';
+import { Enemy, Fireball, FuelTank, MysteryTarget, Rocket, Ufo } from './entities/enemies';
 import { Explosion } from './entities/explosion';
 import { Player } from './entities/player';
 import { Bomb, Shot } from './entities/weapons';
@@ -24,6 +25,8 @@ import { drawHud, type HudState } from './ui/hud';
 import { spriteHitsRect, spriteHitsTerrain, spritesOverlap } from './world/collision';
 import { Spawner, type Spawn } from './world/spawner';
 import { MISSION } from './world/stages';
+import type { AirKind } from './world/stages/types';
+import { Waves } from './world/waves';
 import { World } from './world/world';
 
 /**
@@ -34,14 +37,15 @@ import { World } from './world/world';
 type State = 'playing' | 'dying' | 'gameOver';
 
 /**
- * Top-level game state. Phase 3: stage 1 with rockets, fuel tanks, mystery
- * targets, explosions and scoring.
+ * Top-level game state. Phase 4: stages 1-3 (mountains, UFO cave,
+ * fireballs), looping.
  */
 export class Game {
   private readonly rng = new Rng();
   private readonly starfield = new Starfield(this.rng);
   private readonly world = new World(MISSION);
   private readonly spawner = new Spawner(this.world);
+  private readonly waves = new Waves(MISSION);
   private readonly player = new Player();
   private shots: Shot[] = [];
   private bombs: Bomb[] = [];
@@ -138,6 +142,7 @@ export class Game {
     this.enemies = [];
     this.explosions = [];
     this.spawner.reset(this.scroll);
+    this.waves.reset();
     this.state = 'playing';
   }
 
@@ -145,6 +150,12 @@ export class Game {
     const { player, input, world } = this;
     this.scroll += WORLD.scrollSpeed;
     for (const spawn of this.spawner.take(this.scroll)) this.enemies.push(this.createEnemy(spawn));
+    // Air waves run while the ship and the screen's right edge share a stage.
+    const shipStage = world.section(this.scroll + player.x);
+    const edgeStage = world.section(this.scroll + SCREEN_W - 1);
+    for (const kind of this.waves.update(shipStage === edgeStage ? shipStage : -1)) {
+      this.enemies.push(this.createAirEnemy(kind));
+    }
 
     player.update(input);
 
@@ -189,7 +200,10 @@ export class Game {
       // Everything the shot passed through this frame, up to where it stopped.
       const pathW = shot.x + w - x0;
       const target = this.enemies.find(
-        (e) => !e.dead && spriteHitsRect(e.sprite, e.screenX(this.scroll), e.y, x0, shot.y, pathW, 1),
+        (e) =>
+          !e.dead &&
+          e.shootable &&
+          spriteHitsRect(e.sprite, e.screenX(this.scroll), e.y, x0, shot.y, pathW, 1),
       );
       if (target) {
         this.destroy(target);
@@ -205,6 +219,7 @@ export class Game {
       const target = this.enemies.find(
         (e) =>
           !e.dead &&
+          e.shootable &&
           spritesOverlap(bomb.sprite, bomb.left, bomb.top, e.sprite, e.screenX(this.scroll), e.y),
       );
       if (target) {
@@ -237,6 +252,15 @@ export class Game {
         return new FuelTank(spawn.wx, spawn.y);
       case 'mystery':
         return new MysteryTarget(spawn.wx, spawn.y);
+    }
+  }
+
+  private createAirEnemy(kind: AirKind): Enemy {
+    switch (kind) {
+      case 'ufo':
+        return Ufo.spawn(this.world, this.scroll);
+      case 'fireball':
+        return Fireball.spawn(this.world, this.scroll, this.rng);
     }
   }
 

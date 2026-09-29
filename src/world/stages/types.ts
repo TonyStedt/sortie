@@ -21,6 +21,26 @@ export interface Placement {
   readonly kind: TargetKind;
 }
 
+/** Airborne enemies, released in waves while the ship is in the stage. */
+export type AirKind = 'ufo' | 'fireball';
+
+/**
+ * A repeating wave of airborne enemies. Waves run only while the ship and
+ * the right edge of the screen are both inside the stage, and restart when
+ * the stage is re-entered.
+ */
+export interface WaveDef {
+  readonly kind: AirKind;
+  /** Frames after the stage becomes active before the first burst. */
+  readonly delay: number;
+  /** Frames between the starts of successive bursts. */
+  readonly every: number;
+  /** Enemies per burst... */
+  readonly burst: number;
+  /** ...released this many frames apart. */
+  readonly gap: number;
+}
+
 export interface StageDef {
   /** Label in the HUD's section-progress bar. */
   label: string;
@@ -39,4 +59,6 @@ export interface StageDef {
   ceiling?: readonly Knot[];
   /** Ground objects, in any order. */
   targets?: readonly Placement[];
+  /** Airborne waves. */
+  waves?: readonly WaveDef[];
 }

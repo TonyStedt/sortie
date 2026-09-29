@@ -82,13 +82,18 @@ src/game.ts    top-level state machine wiring it together
 - Terrain is authored as `[run, height]` knots (see `src/world/stages/types.ts`). To match the
   original's tile-built look, heights and runs are multiples of 8 and slopes are flat or 45°.
   Every stage starts and ends at a height that joins its neighbours seamlessly.
+- Airborne enemies (UFOs, fireballs) aren't placed: each stage lists `waves` (see `WaveDef`),
+  released while the ship and the screen's right edge are both in that stage.
+- Stages with a ceiling must keep the passage passable. Check the minimum floor-to-ceiling gap
+  when editing (stage 2 keeps it ≥ 72 px), and open the ceiling to 0 at both ends so stages join.
 - The mission order is `MISSION` in `src/world/stages/index.ts`.
 - All score values go in **one** table, `SCORES` in `src/core/scores.ts`, which defaults to the
   original's values. The extra-life threshold (`EXTRA_LIFE_AT`) lives there too.
 - Ground objects are placed per stage in `targets` (see `Placement` in `src/world/stages/types.ts`).
   The spawner stands them on the ground and warns in dev if the ground under one isn't flat.
 - Player, weapon, fuel, and scroll tuning live in `src/core/config.ts` (`PLAYER`, `LASER`, `BOMB`,
-  `FUEL`, `WORLD`, `ROCKET`).
+  `FUEL`, `WORLD`, `ROCKET`, `UFO`, `FIREBALL`).
+- Enemies that can't be destroyed set `shootable = false`, and shots and bombs pass through them.
 
 ## Build order
 
@@ -97,7 +102,7 @@ Work one phase at a time, then **stop so the user can test**. Don't start the ne
 1. ✅ Loop, scaling, input, starfield, player ship movement, HUD skeleton.
 2. ✅ Terrain scrolling engine plus stage 1 terrain, collision, laser, bombs, fuel.
 3. ✅ Stage 1 entities: rockets, fuel tanks, mystery targets, explosions, scoring.
-4. Stages 2–3 (ceiling, UFOs, fireballs).
+4. ✅ Stages 2–3 (ceiling, UFOs, fireballs).
 5. Stages 4–6 (city, maze, base), plus the mission loop and difficulty scaling.
 6. Audio.
 7. Attract mode, 2-player, high scores (localStorage), polish.

@@ -64,6 +64,31 @@ export const BOMB = {
   maxVY: 2.5,
 } as const;
 
+/**
+ * UFOs (stage 2) weave through the cave: they follow the middle of the
+ * passage, swinging up and down on a sine wave, and drift left.
+ */
+export const UFO = {
+  /** Leftward speed relative to the terrain (px/frame); on screen it adds the scroll speed. */
+  speed: 0.5,
+  /** Swing, px either side of the passage centre (shrunk to fit narrow passages). */
+  amplitude: 24,
+  /** Frames per full up-and-down swing. */
+  period: 72,
+  /** Minimum gap kept between a UFO and the rock. */
+  margin: 4,
+} as const;
+
+/** Fireballs (stage 3) streak straight left and cannot be destroyed. */
+export const FIREBALL = {
+  /** Leftward speed relative to the terrain (px/frame). */
+  speed: 2.5,
+  /** Fireballs spawn no higher than this below the top of the playfield... */
+  topMargin: 8,
+  /** ...and at least this far above the highest ground on screen. */
+  groundMargin: 8,
+} as const;
+
 /** Fuel is counted in frames of flight. */
 export const FUEL = {
   /** A full tank lasts 36 s. */

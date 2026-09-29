@@ -41,6 +41,8 @@ A faithful tribute to a classic 1981 horizontal-scrolling arcade shooter (referr
   time or `dt` in game logic.
 - Screen-space entities (player, shots, bombs) use screen pixels. Terrain is indexed by world x;
   `scroll` is the world x of screen column 0, so screen x maps to world x as `scroll + x`.
+- Enemies and explosions are world-anchored: world x plus screen y, so they scroll with the terrain.
+  Convert with `screenX(scroll)` for drawing and collision.
 - `Input.poll()` runs once per simulation frame. Use `pressed()` for edges and `down()` for held
   actions.
 
@@ -81,10 +83,12 @@ src/game.ts    top-level state machine wiring it together
   original's tile-built look, heights and runs are multiples of 8 and slopes are flat or 45°.
   Every stage starts and ends at a height that joins its neighbours seamlessly.
 - The mission order is `MISSION` in `src/world/stages/index.ts`.
-- All score values go in **one** configurable table, defaulting to the original's values. The
-  extra-life threshold is configurable too.
+- All score values go in **one** table, `SCORES` in `src/core/scores.ts`, which defaults to the
+  original's values. The extra-life threshold (`EXTRA_LIFE_AT`) lives there too.
+- Ground objects are placed per stage in `targets` (see `Placement` in `src/world/stages/types.ts`).
+  The spawner stands them on the ground and warns in dev if the ground under one isn't flat.
 - Player, weapon, fuel, and scroll tuning live in `src/core/config.ts` (`PLAYER`, `LASER`, `BOMB`,
-  `FUEL`, `WORLD`).
+  `FUEL`, `WORLD`, `ROCKET`).
 
 ## Build order
 
@@ -92,7 +96,7 @@ Work one phase at a time, then **stop so the user can test**. Don't start the ne
 
 1. ✅ Loop, scaling, input, starfield, player ship movement, HUD skeleton.
 2. ✅ Terrain scrolling engine plus stage 1 terrain, collision, laser, bombs, fuel.
-3. Stage 1 entities: rockets, fuel tanks, mystery targets, explosions, scoring.
+3. ✅ Stage 1 entities: rockets, fuel tanks, mystery targets, explosions, scoring.
 4. Stages 2–3 (ceiling, UFOs, fireballs).
 5. Stages 4–6 (city, maze, base), plus the mission loop and difficulty scaling.
 6. Audio.

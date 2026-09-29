@@ -70,6 +70,27 @@ export const FUEL = {
   fullFrames: 36 * FPS,
   /** At or below this fraction the gauge turns red and blinks. */
   lowFraction: 0.25,
+  /** Shooting or bombing a fuel tank adds this much (9 s), capped at full. */
+  tankRefillFrames: 9 * FPS,
+} as const;
+
+/** Ground rockets. */
+export const ROCKET = {
+  /**
+   * Chance that a given rocket launches at all (decided when it spawns).
+   * The rest stay on their pads as bombing targets.
+   */
+  launchChance: 0.5,
+  /**
+   * A rocket that will launch does so once it is this close ahead of the
+   * ship (px, rocket x minus ship x), picked at random per rocket.
+   */
+  triggerMin: 24,
+  triggerMax: 96,
+  /** Climb: starts at startSpeed, accelerates to maxSpeed (px/frame). */
+  startSpeed: 0.5,
+  accel: 0.04,
+  maxSpeed: 2,
 } as const;
 
 /** How long GAME OVER stays up before a new game starts (until attract mode exists). */

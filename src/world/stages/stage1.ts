@@ -1,5 +1,9 @@
 import { PAL } from '../../gfx/palette';
-import type { StageDef } from './types';
+import type { Placement, StageDef } from './types';
+
+const rocket = (x: number): Placement => ({ x, kind: 'rocket' });
+const fuel = (x: number): Placement => ({ x, kind: 'fuel' });
+const mystery = (x: number): Placement => ({ x, kind: 'mystery' });
 
 /**
  * Stage 1: rolling mountains, open sky (no ceiling).
@@ -10,8 +14,9 @@ import type { StageDef } from './types';
  * - Peaks stay at or below 136 px (floor y >= 104) so there is always at
  *   least ~60 px of sky over the highest ground: this stage teaches, it
  *   doesn't squeeze.
- * - Flat plateaus and valleys are left for placements in Phase 3: fuel
- *   tanks on flats, ground rockets in valleys and on hilltops.
+ * - Ground objects stand on the flats: 24 rockets, 7 fuel tanks (one about
+ *   every 4.5 s, each worth 9 s of fuel) and 3 mystery targets. The launch
+ *   strip's first ~100 px is left empty.
  * - It begins and ends at height 24 so sections join without a seam.
  */
 export const STAGE_1: StageDef = {
@@ -51,5 +56,35 @@ export const STAGE_1: StageDef = {
     [24, 48], [48, 48], [24, 24],
     // Run-out into the next section.
     [96, 24],
+  ],
+  targets: [
+    // Launch strip, bump, first flat.
+    rocket(104), rocket(156), fuel(208),
+    // Double hill: one on each step.
+    rocket(288), rocket(332),
+    // Valley pair.
+    rocket(416), rocket(428),
+    // Low plateau.
+    fuel(480), rocket(504), mystery(540),
+    // Peak shoulder.
+    rocket(668),
+    // Wide valley: guarded tank.
+    rocket(720), fuel(736), rocket(756),
+    // Mid plateau: guarded mystery.
+    rocket(824), mystery(840), rocket(864),
+    // Summit and ledge.
+    rocket(932), fuel(980),
+    // Valley after the big climb.
+    rocket(1072), rocket(1088),
+    // After the rumble strip.
+    rocket(1176), fuel(1192),
+    // Tall ridge approach.
+    rocket(1304), rocket(1316), fuel(1364),
+    // After the long descent.
+    rocket(1576), mystery(1592),
+    // Last hills.
+    rocket(1652), rocket(1704), rocket(1716), fuel(1764), rocket(1788),
+    // Run-out.
+    rocket(1848),
   ],
 };

@@ -47,27 +47,29 @@ export class Bomb {
     return s.bombDive;
   }
 
-  /** Returns false once the bomb has hit terrain or left the playfield. */
-  update(world: World, scroll: number): boolean {
+  /** Move one frame. Returns false once the bomb has left the playfield. */
+  update(): boolean {
     this.vx = Math.max(BOMB.minVX, this.vx - BOMB.dragVX);
     this.vy = Math.min(BOMB.maxVY, this.vy + BOMB.gravity);
     this.x += this.vx;
     this.y += this.vy;
-    if (this.x >= SCREEN_W || this.y >= PLAYFIELD_BOTTOM) return false;
-    const s = this.sprite;
-    return !spriteHitsTerrain(world, scroll, s, this.left(s), this.top(s));
+    return this.x < SCREEN_W && this.y < PLAYFIELD_BOTTOM;
+  }
+
+  hitsTerrain(world: World, scroll: number): boolean {
+    return spriteHitsTerrain(world, scroll, this.sprite, this.left, this.top);
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
-    const s = this.sprite;
-    drawSprite(ctx, s, this.left(s), this.top(s));
+    drawSprite(ctx, this.sprite, this.left, this.top);
   }
 
-  private left(s: Sprite): number {
-    return this.x - Math.floor(s.w / 2);
+  /** Top-left of the current frame, screen space. */
+  get left(): number {
+    return this.x - Math.floor(this.sprite.w / 2);
   }
 
-  private top(s: Sprite): number {
-    return this.y - Math.floor(s.h / 2);
+  get top(): number {
+    return this.y - Math.floor(this.sprite.h / 2);
   }
 }

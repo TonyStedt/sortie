@@ -8,6 +8,19 @@
  */
 export type Knot = readonly [run: number, height: number];
 
+/** Things that sit on the ground and scroll with the terrain. */
+export type TargetKind = 'rocket' | 'fuel' | 'mystery';
+
+/**
+ * A ground object. `x` is the object's left edge, in pixels from the start of
+ * the stage; it is stood on the ground automatically. Place objects on flat
+ * ground wide enough for them (rocket 8 px, fuel tank and mystery 16 px).
+ */
+export interface Placement {
+  readonly x: number;
+  readonly kind: TargetKind;
+}
+
 export interface StageDef {
   /** Label in the HUD's section-progress bar. */
   label: string;
@@ -24,4 +37,6 @@ export interface StageDef {
    * playfield (0 = no ceiling). Same format as `floor`, same total length.
    */
   ceiling?: readonly Knot[];
+  /** Ground objects, in any order. */
+  targets?: readonly Placement[];
 }

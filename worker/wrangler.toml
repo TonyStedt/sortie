@@ -1,0 +1,17 @@
+# Arcade score server, shared by several games. Setup steps are in worker/README.md.
+name = "arcade-scores"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "arcade-scores"
+# Printed by `npm run db:create`. Local development works without it.
+database_id = "59bfd7b2-4683-45f6-913d-6cc57545ca33"
+migrations_dir = "migrations"
+
+# At most 5 score submissions a minute per IP (best effort, per Cloudflare location).
+[[ratelimits]]
+name = "SUBMIT_LIMIT"
+namespace_id = "1001"
+simple = { limit = 5, period = 60 }

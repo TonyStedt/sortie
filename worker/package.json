@@ -1,0 +1,17 @@
+{
+  "name": "arcade-scores",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:create": "wrangler d1 create arcade-scores",
+    "db:migrate": "wrangler d1 migrations apply arcade-scores --remote",
+    "db:migrate:local": "wrangler d1 migrations apply arcade-scores --local",
+    "game:add": "wrangler d1 execute arcade-scores --remote --file",
+    "game:add:local": "wrangler d1 execute arcade-scores --local --file"
+  },
+  "devDependencies": {
+    "wrangler": "^4.146.0"
+  }
+}

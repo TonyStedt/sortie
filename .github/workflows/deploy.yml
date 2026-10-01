@@ -29,6 +29,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          # Shared high scores (worker/README.md). Unset: scores stay in each browser.
+          VITE_SCORES_URL: ${{ vars.SCORES_URL }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

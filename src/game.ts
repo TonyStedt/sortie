@@ -3,6 +3,7 @@ import { FLOW } from './core/config';
 import { HighScores } from './core/highscores';
 import type { Input } from './core/input';
 import { Rng } from './core/rng';
+import { ScoreServer } from './core/scoreserver';
 import type { TestMode } from './core/testmode';
 import { drawTextAt, drawTextCentered } from './gfx/font';
 import { PAL } from './gfx/palette';
@@ -47,7 +48,7 @@ export class Game {
   private readonly world = new World(MISSION);
   private readonly play = new Play(this.world, this.rng);
   private readonly autopilot = new Autopilot();
-  private readonly highScores = new HighScores();
+  private readonly highScores = new HighScores(ScoreServer.fromEnv());
 
   private mode: Mode = { kind: 'attract', screen: 'title', timer: FLOW.titleFrames };
   /** Players of the current (or last) game; also what the HUD shows between games. */
@@ -277,6 +278,8 @@ export class Game {
     this.players = [newPlayerStats(this.test.startStage), newPlayerStats(this.test.startStage)];
     this.active = 0;
     this.newRank = -1;
+    // Pick up other players' scores while the table is off screen, in time for game over.
+    this.highScores.refresh();
     this.beginTurn(true);
   }
 

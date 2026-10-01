@@ -6,7 +6,7 @@ A faithful tribute to a classic 1981 horizontal-scrolling arcade shooter (referr
 ## Commands
 
 - `npm run dev` starts the Vite dev server.
-- `npm run typecheck` runs `tsc` with no emit.
+- `npm run typecheck` runs `tsc` with no emit, for the game and `worker/`.
 - `npm run build` runs typecheck plus the production build into `dist/`.
 - Deployment: every push to `main` builds the game and publishes it to GitHub Pages
   (`.github/workflows/deploy.yml`). `base: './'` in `vite.config.ts` keeps asset paths relative, so
@@ -24,6 +24,8 @@ A faithful tribute to a classic 1981 horizontal-scrolling arcade shooter (referr
 ## Tech
 
 - TypeScript (strict), HTML5 Canvas 2D, Web Audio API, Vite. **No game framework, no runtime deps.**
+  `worker/` (the optional score server) has its own `package.json` (wrangler only) and is
+  deployed separately from it, not by CI.
 - Input: keyboard plus the optional Gamepad API, abstracted as `Action`s in `src/core/input.ts`.
 
 ## Screen
@@ -78,6 +80,12 @@ src/game.ts    the arcade machine: attract mode, credits, players taking turns, 
   missions (and so difficulty), extra life and checkpoint.
 - Game over is followed by initials entry if the score makes the top 10 (`HighScores`, saved in
   localStorage). Then play goes to the other player or back to attract mode.
+- If `VITE_SCORES_URL` is set (CI uses the `SCORES_URL` repo variable), the table is shared via
+  the score server in `worker/`: a Cloudflare Worker with a D1 database, serving several games
+  at `/scores/<game>`. Each game's rules (origins, table size, score limits, initials) are a row
+  in its `games` table (`worker/games/*.sql`). `HighScores` fetches (on page load and at game
+  start) and sends in the background, and never blocks the game. localStorage caches the table
+  and queues unsent entries, so offline play works as before. Setup is in `worker/README.md`.
 - Timings for every screen are in `FLOW` in `src/core/config.ts`.
 
 ## Audio

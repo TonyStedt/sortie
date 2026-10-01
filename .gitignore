@@ -26,3 +26,6 @@ Thumbs.db
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Wrangler local state (local D1 database, dev cache)
+.wrangler/
